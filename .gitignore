@@ -1,0 +1,34 @@
+echo "
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+db.sqlite3
+media/
+staticfiles/
+
+# Environments
+.env
+*.env
+
+# VSCode
+.vscode/
+
+# Docker
+*.pid
+*.tar
+*.img
+*.log
+
+# Node
+node_modules/
+
+# Mac
+.DS_Store
+" > .gitignore
