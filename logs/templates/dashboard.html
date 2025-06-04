@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Time Tracker Insights</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px; 
+            width: 100%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="container mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Time Tracker Insights Dashboard</h1>
+
+        <nav class="mb-6 flex justify-center space-x-4">
+            <a href="{% url 'dashboard' %}" class="text-blue-800 font-bold border-b-2 border-blue-800">Dashboard</a>
+            <a href="{% url 'show_tasks' %}" class="text-blue-600 hover:text-blue-800 font-medium">All Tasks</a>
+            <a href="{% url 'upload' %}" class="text-blue-600 hover:text-blue-800 font-medium">Upload CSV</a>
+        </nav>
+
+        {% if not has_data %}
+            <div class="text-center text-gray-600 mt-8 p-4 bg-yellow-50 rounded-md">
+                <p class="mb-2">No data yet!</p>
+                <a href="{% url 'upload' %}" class="text-blue-600 hover:underline font-medium">Upload CSV</a>
+            </div>
+        {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Total Time Per Task (Hours)</h2>
+                    <div class="chart-container">
+                        <canvas id="totalTimeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Overall Time Summary</h2>
+                    <p class="text-lg text-gray-800 mb-2">
+                        Total Idle Time: <span class="font-bold text-red-600">{{ overall_idle_time }}</span>
+                    </p>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Idle Time Per Day:</h3>
+                    <ul class="list-disc list-inside text-gray-700">
+                        {% for date, idle_duration in idle_time_per_day.items %}
+                            <li>{{ date|date:"Y-m-d" }}: <span class="font-medium">{{ idle_duration }}</span></li>
+                        {% empty %}
+                            <li>No idle time recorded.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-lg shadow-sm mb-8">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Daily Timeline</h2>
+                {% for day, tasks_on_day in daily_timeline %}
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">{{ day|date:"l, F j, Y" }}</h3>
+                        <ul class="border border-gray-200 rounded-md divide-y divide-gray-200">
+                            {% for task in tasks_on_day %}
+                                <li class="p-3 flex justify-between items-center hover:bg-white">
+                                    <span class="font-medium text-gray-900">{{ task.task_name }}</span>
+                                    <span class="text-sm text-gray-600">
+                                        {{ task.start_time|date:"H:i" }} - {{ task.end_time|date:"H:i" }}
+                                        {% if task.duration_minutes is not None %}
+                                            ({{ task.duration_minutes|floatformat:"1" }} mins)
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const taskLabels = JSON.parse('{{ task_labels_json|safe }}');
+                    const taskData = JSON.parse('{{ task_data_json|safe }}');
+
+                    const taskDataHours = taskData.map(seconds => (seconds / 3600).toFixed(2));
+
+                    const ctx = document.getElementById('totalTimeChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: taskLabels,
+                            datasets: [{
+                                label: 'Total Time (Hours)',
+                                data: taskDataHours,
+                                backgroundColor: 'rgba(59, 130, 246, 0.6)', 
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y', 
+                            plugins: {
+                                legend: {
+                                    display: false,
+                                },
+                                title: {
+                                    display: false,
+                                    text: 'Total Time Per Task'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Hours'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Task Name'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            </script>
+        {% endif %}
+    </div>
+</body>
+</html>
